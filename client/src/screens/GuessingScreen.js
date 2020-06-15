@@ -1,9 +1,3 @@
-/**
- * The main guessing screen for each mystery function. When the user goes to the quiz,
- * this same page is used, but the quiz components are displayed onscreen instead.
- * All of the display console logic is here, but the logic for the tabs is in within Tabs
- * contained by TabsWrapper, and the quiz logic in Quiz.
- */
 import React, { Component } from 'react'
 import withStyles from '@material-ui/styles/withStyles'
 import { withRouter } from 'react-router-dom'
@@ -13,9 +7,10 @@ import Grid from '@material-ui/core/Grid'
 import TabsWrapper from '../components/TabsWrapper'
 import Paper from '@material-ui/core/Paper'
 import { GridList, GridListTile } from '@material-ui/core'
+import EvalGuessLine from '../components/EvalGuessLine'
 import EvalInputLine from '../components/EvalInputLine'
+import DummyLine from '../components/DummyLine'
 import Quiz from '../components/Quiz';
-import EvalPredInputLine from '../components/EvalPredInputLine'
 
 const gridListHeight = 500
 
@@ -127,31 +122,38 @@ const styles = theme => ({
   },
 })
 
+// Creates blank tiles to go in the console gridlist, so that new submissions
+// appear at the bottom and not the top 
+function dummyTiles() {
+  var guesses = []
+  var numTiles = gridListHeight / 80
+  for (var i = 1; i <= numTiles; i++) {
+    guesses.push({
+      key: i * -1,
+      type: "dummy_line"
+    })
+  }
+  return guesses
+}
+
 class GuessingScreen extends Component {
   constructor(props) {
     super(props)
     this.state = {
-      // At beginning, not in quiz state
       quiz: false,
-      // No submitted function guess yet
       guessText: ""
     }
-    // Lowest quiz question number not seen yet is 0
     this.setNextQ(0)
   }
 
-  // For display of inputs evaluated - 'guesses' is a misnomer;
-  // the console onscreen only displays the inputs evaluated and their outputs
   guesses = []
-  // For getting the console to scroll down if needed to the newest input evaluated
   scrolling = false
   scrollId
 
-  // To keep track of inputs allowed to be evaluated - if inputs are seen during
-  // the quiz, then they can't be evaluated after returning to evaluation
+  // To keep track of inputs allowed to be evaluated
   nextQ = 0
 
-  // If not at bottom of console yet, scroll down until it is
+  // If not at bottom of screen yet, scroll stop repeated call if reached
   scrollDown = () => {
     if (this.gridlist === null) {
       return
@@ -164,7 +166,7 @@ class GuessingScreen extends Component {
     }
   }
 
-  // Update the input output pairs shown in the console, and scroll down to new guess
+  // Update the guesses list shown in the console, and scroll down to new guess
   guessMade = () => {
     this.setState({ guesses: this.guesses, scrollId: this.scrollId, scrolling: this.scrolling })
     if (!this.scrolling) {
@@ -173,28 +175,41 @@ class GuessingScreen extends Component {
     }
   }
 
-  // Create a new display object for the console. eval_input is for function inputs evaluated;
-  // eval_pred_input is for predicate inputs. They have different text formatting needs
   getLine(tile, gridlist) {
+    if (tile.type === "dummy_line") {
+      return (
+        <DummyLine></DummyLine>
+      )
+    }
     if (tile.type === "eval_input") {
       return (
         <EvalInputLine in={tile.in} out={tile.out}></EvalInputLine>
       )
     }
-    if (tile.type === "eval_pred_input") {
+    if (tile.type === "eval_pair") {
       return (
-        <EvalPredInputLine in={tile.in} out={tile.out}></EvalPredInputLine>
+        <Grid container spacing={1}>
+          <Grid item>
+            <EvalGuessLine in={tile.in} out={tile.out} result={tile.result}></EvalGuessLine>
+          </Grid>
+          <Grid item><i>({tile.reason})</i></Grid>
+        </Grid>
+      )
+    }
+    if (tile.type === "final_answer") {
+      return (
+        <Grid container spacing={1}>
+          <Grid item><i>Guess: {tile.reason}</i></Grid>
+        </Grid>
       )
     }
   }
 
-  // If moving on to next function, reset console and quiz questions seen
+  // When quiz taken and then move on
   resetGuesses = () => {
-    this.guesses = []
-    this.setNextQ(-1)
+    this.guesses = dummyTiles()
   }
 
-  // Return to evaluation screen
   quizOff = () => {
     this.setState({ 
       quiz: false, 
@@ -202,7 +217,6 @@ class GuessingScreen extends Component {
     })
   }
 
-  // Go to quiz screen
   quizOn = (guessText) => {
     if (guessText === "") {
       var text = "Please submit a non-blank guess."
@@ -212,16 +226,15 @@ class GuessingScreen extends Component {
     this.setNextQ(1)
     this.setState({
       quiz: true,
-      guessText: guessText.trim()
+      guessText: guessText
     })
   }
 
-  // Get the lowest question number that hasn't been seen yet
+  // functions for getting and setting next Q to answer
   getNextQ = () => {
     return this.nextQ
   }
-  // Set lowest question number that hasn't been seen yet
-  // If given -1, resets to 0
+
   setNextQ = (next) => {
     // Reset
     if (next === -1) {
@@ -237,66 +250,56 @@ class GuessingScreen extends Component {
   render() {
     const { classes } = this.props
     var funcObj = this.props.funcObj
-    window.scrollTo(0,0)
 
     return (
       <React.Fragment>
         <CssBaseline />
         < div className={classes.root} >
-          {/* This screen can either be in quiz mode or evaluation mode */}
-
+          {/* Center all Grids */}
           {this.state.quiz ?
-            // Quiz mode
-            < Grid container justify="center" spacing={2} direction="row" alignItems="center">
-              {/* Display the output type of the function/predicate for reference, and text of guess submitted upon going to quiz */}
-              < Grid container item className={classes.smallPanel} direction="column" spacing={4} alignContent="center" >
-                {/* Output type description */}
-                < Grid item>
-                  <Typography variant="h6">Output type: </Typography>{funcObj.outputDescription()}
-                </Grid>
-
-                {/* Current guess description */}
-                < Grid item>
-                  <Typography color="secondary" variant="h6">Your current guess: </Typography>
-                  <Typography style={{whiteSpace: 'pre'}} color="secondary"><b>{this.state.guessText}</b></Typography>
-                </Grid>
+            < Grid container justify="center" spacing={4} direction="row" alignContent="center">
+              {/* Quiz zone */}
+              < Grid container item className={classes.panel}>
+                <Quiz nextPage={this.props.nextPage} guessText={this.state.guessText} funcObj={this.props.funcObj} cancelFcn={this.quizOff} resetFcn={this.resetGuesses} setNextQ={this.setNextQ}></Quiz>
               </ Grid>
 
-              {/* Quiz component here, which contains the question text and text box for submitting an output */}
-              < Grid container item className={classes.panel}>
-                <Quiz nextPage={this.props.nextPage} guessText={this.state.guessText} funcObj={funcObj} cancelFcn={this.quizOff} resetFcn={this.resetGuesses} setNextQ={this.setNextQ}></Quiz>
+              {/* Current guess and function output type */}
+              < Grid container item className={classes.smallPanel} direction="column" spacing={4}>
+                {/* Output type description */}
+                < Grid item>
+                  <Typography color="secondary" variant="h6">Your current guess: </Typography>{this.state.guessText}
+                </Grid>
+                < Grid item>
+                  <Typography color="secondary" variant="h6">Output type: </Typography>{this.props.funcObj.outputDescription()}
+                </Grid>
               </ Grid>
             </Grid>
             :
-            // Evaluation mode
             < Grid container justify="center" spacing={4}>
               < Grid container item spacing={4} className={classes.panel} alignContent="flex-start" >
-                {/* Function signature: input and output types */}
-                < Grid item>
-                  Mystery predicate <b>{this.props.current + 1}</b> out of <b>{this.props.total}</b> takes in a 
-                    <ul>
+                {/* Function signature */}
+                < Grid item xs={12} >
+                  Mystery function <b>{this.props.current + 1}</b> out of <b>{this.props.total}</b> takes an input of type
+                    <ol>
                     {Array(funcObj.numArgs).fill(<li>
-                     {funcObj.inputDescription()}
+                      <Typography variant="h6">{this.props.funcObj.inputDescription()}</Typography>
                     </li>)}
-                    </ul>
-                  and outputs a 
-                  <ul>
+                  </ol>
+                  and an output of type
+                  <ol>
                     <li>
-                      {funcObj.outputDescription()}
+                      <Typography variant="h6">{this.props.funcObj.outputDescription()}</Typography>
                     </li>
-                  </ul>
-                  <Typography color="secondary">The only operators supported are union (+) and cartesian product (-`{'>'}`) on single atoms. Also, you can specify an empty set like so: Node = none
-                  
-                  </Typography>
+                  </ol>
                 </Grid>
 
-                {/* Tabs for input evaluation and guess submission */}
+                {/* Tabs */}
                 <Grid item xs={12} >
-                  <TabsWrapper guesses={this.guesses} funcObj={funcObj} funcObj={funcObj} updateFunc={this.guessMade} toQuiz={this.quizOn} getNextQ={this.getNextQ}></TabsWrapper>
+                  <TabsWrapper guesses={this.guesses} funcObj={this.props.funcObj} updateFunc={this.guessMade} toQuiz={this.quizOn} getNextQ={this.getNextQ}></TabsWrapper>
                 </Grid>
               </Grid>
 
-              {/* Console for displaying input evaluations */}
+              {/* Console */}
               <Grid container item spacing={4} className={classes.panel}>
                 <Paper className={classes.paper}>
                   <div className={classes.gridListWrapper}>

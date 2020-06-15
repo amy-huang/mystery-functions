@@ -1,7 +1,3 @@
-/**
- * Screen shown after all mystery functions/predicates are completed.
- * Displays the ID for which this session has been logged.
- */
 import React, { Component } from 'react'
 import withStyles from '@material-ui/styles/withStyles'
 import { withRouter } from 'react-router-dom'
@@ -106,17 +102,22 @@ const styles = theme => ({
 })
 
 class ThankYouScreen extends Component {
+
   render() {
     const { classes } = this.props
+
     return (
       <React.Fragment>
         <CssBaseline />
         < div className={classes.root} >
+          {/* Center all Grids */}
           < Grid container justify="center" spacing={4}>
+
             <Grid container item spacing={4} className={classes.panel}>
               <Paper className={classes.paper}>
                 <div className={classes.gridListWrapper}>
                   <Grid container spacing={4} direction="column" className={classes.panel}>
+
                     <Grid item>
                       <Typography variant="h3">You're done! Thank you for your time.</Typography>
                     </Grid>

@@ -1,27 +1,32 @@
+/**
+ * Used for explaining the session workflow in thesis writeup.
+ */
 import ListOfInteger from "../types/ListOfInteger";
 import Float from "../types/Float";
 
-class Average {
-  static inputType = ListOfInteger
+class Dummy {
   static numArgs = 1
+  static inputType = ListOfInteger
   static outputType = Float
 
   static description(): string {
-    return "Average"
+    return "Dummy"
   }
 
   static function(items: number[]): number {
     var sum = 0
-    items.forEach((elem) => { sum += elem })
-    return sum / items.length
+    for (var i = 0; i < items.length; i++) {
+        sum += items[i]
+    }
+    return Math.abs(sum)
   }
 
   static inputGenerators(): Function[] {
-    return [() => { return [1, 8, 24] }, () => { return [8, 1, 24] }, () => { return [1, 2, 3, 14] }]
+    return [() => { return [8, 3, 11] }, () => { return [-4, 1] }, () => { return [-10, -2, 0, 0] }]
   }
 
   static answerText(): string {
-    return "This function returns the average of the input list of numbers."
+    return "This function returns the median of the input list of numbers. If the size of the list is odd, it is the middle element of the list when sorted; if the size is even, it is the average of the middle two elements of the list when sorted."
   }
 
   static inputPlaceHolderText(): string {
@@ -45,12 +50,12 @@ class Average {
     try {
       // Parse string as a list, with brackets required
       if (input.trim()[0] !== "[") {
-        console.log("no starting bracket")
+        // console.log("no starting bracket")
         return false;
       }
       as_list = JSON.parse(input);
       if (as_list.length > 0) {
-        return ListOfInteger.valid(input)
+        return this.inputType.valid(input)
       } else {
         return false
       }
@@ -59,8 +64,6 @@ class Average {
       return false;
     }
   }
-
-  /* Should not have to touch functions below here! */
 
   static validOutput(input: any): boolean {
     return this.outputType.valid(input)
@@ -99,4 +102,4 @@ class Average {
   }
 }
 
-export default Average
+export default Dummy

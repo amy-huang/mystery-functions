@@ -52,14 +52,10 @@ class ListOfInteger {
       return true
     }
     if (first.length !== second.length) {
-      // console.log(first, second, "not same length")
       return false
     }
-    for (var i = 0; i < first.length; i++) {
-      if (first[i] !== second[i]) {
-        // console.log(first, second, first[i], "does not equal", second[i])
-        return false
-      }
+    for (var i = 0; i < first.length; ++i) {
+      if (first[i] !== second[i]) return false;
     }
     return true
   }
